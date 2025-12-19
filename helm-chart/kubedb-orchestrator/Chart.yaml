@@ -1,0 +1,17 @@
+apiVersion: v2
+name: kubedb-orchestrator
+description: A Helm chart for KubeDB Orchestrator - DBaaS management system
+type: application
+version: 0.1.0
+appVersion: "v1"
+keywords:
+  - kubedb
+  - database
+  - orchestrator
+  - dbaas
+maintainers:
+  - name: Amitesh Singh
+home: https://github.com/yourusername/kubedb-orchestrator
+sources:
+  - https://github.com/yourusername/kubedb-orchestrator
+

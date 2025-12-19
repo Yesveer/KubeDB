@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kubedb-orchestrator.fullname" . }}-config
+  labels:
+    {{- include "kubedb-orchestrator.labels" . | nindent 4 }}
+data:
+  COMPASS_BASE_URL: {{ .Values.config.compassBaseUrl | quote }}
+  KUBECONFIG_PATH: {{ .Values.config.kubeconfigPath | quote }}
+  MONGO_URI: {{ .Values.config.mongoUri | quote }}
+  INSTALL_SCRIPT_PATH: {{ .Values.config.installScriptPath | quote }}
+

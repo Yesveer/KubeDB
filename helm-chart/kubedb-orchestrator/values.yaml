@@ -1,0 +1,123 @@
+replicaCount: 1
+
+image:
+  repository: amiteshhsingh/kubedb-orchestrator
+  pullPolicy: Always
+  tag: "v1"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "kubedb-orchestrator"
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+  name: http
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+livenessProbe:
+  enabled: false
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  enabled: false
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+config:
+  compassBaseUrl: "http://172.16.109.237:32500"
+  kubeconfigPath: "/data/kubeconfig"
+  mongoUri: "mongodb://sigma:password@172.16.109.237:31396/compass-config?authSource=admin&directConnection=true"
+  installScriptPath: "/scripts/install_kubedb.sh"
+
+# Secrets configuration
+secrets:
+  # Name of the secret containing kubeconfig
+  kubeconfigSecretName: "orchestrator-kubeconfig"
+  # Name of the secret containing Velero credentials (optional)
+  veleroCredentialsSecretName: "velero-credentials"
+  veleroCredentialsOptional: true
+
+# Scripts configuration
+scripts:
+  installKubedb: |
+    #!/bin/bash
+    set -e
+    set -x
+    
+    export KUBECONFIG=/data/kubeconfig
+    
+    echo "Installing kubectl..."
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    chmod +x kubectl
+    mv kubectl /usr/local/bin/
+    
+    echo "Installing helm..."
+    curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+    
+    kubectl version --client
+    helm version
+    
+    echo "Applying local-path-storage..."
+    kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml || true
+    
+    echo "Installing MetalLB..."
+    kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.15.3/config/manifests/metallb-native.yaml || true
+    
+    echo "KubeDB installation script completed!"
+
+# RBAC configuration
+rbac:
+  create: true
+  rules:
+    - apiGroups: [""]
+      resources: ["pods", "services", "configmaps", "secrets", "persistentvolumeclaims", "namespaces"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: ["apps"]
+      resources: ["deployments", "statefulsets"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: ["kubedb.com"]
+      resources: ["*"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: ["velero.io"]
+      resources: ["backups", "restores", "schedules"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: ["metallb.io"]
+      resources: ["ipaddresspools", "l2advertisements"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: [""]
+      resources: ["nodes"]
+      verbs: ["get", "list"]
+
