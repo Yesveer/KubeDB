@@ -39,12 +39,27 @@ func SaveMetalLBPool(pool models.MetalLBPool) error {
 }
 
 // List all pools
-func ListMetalLBPools() ([]models.MetalLBPool, error) {
+
+func ListMetalLBPoolsFiltered(
+	domain, project, cluster string,
+) ([]models.MetalLBPool, error) {
+
+	filter := bson.M{}
+
+	if domain != "" {
+		filter["domain"] = domain
+	}
+	if project != "" {
+		filter["project"] = project
+	}
+	if cluster != "" {
+		filter["cluster"] = cluster
+	}
 
 	cursor, err := db.Client.
 		Database("compass-config").
-		Collection(metallbCollection).
-		Find(context.TODO(), bson.M{})
+		Collection("dbaas-ip").
+		Find(context.TODO(), filter)
 	if err != nil {
 		return nil, err
 	}
