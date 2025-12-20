@@ -72,3 +72,21 @@ func ListMetalLBPoolsFiltered(
 
 	return pools, nil
 }
+
+func DeleteMetalLBPool(domain, project, cluster, poolName string) error {
+
+	_, err := db.Client.
+		Database("compass-config").
+		Collection("dbaas-ip").
+		DeleteOne(
+			context.TODO(),
+			bson.M{
+				"domain":   domain,
+				"project":  project,
+				"cluster":  cluster,
+				"poolName": poolName,
+			},
+		)
+
+	return err
+}
