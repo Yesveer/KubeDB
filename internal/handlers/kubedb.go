@@ -37,6 +37,90 @@ func getBearerToken(r *http.Request) (string, error) {
 }
 
 // POST /install/kubedb
+// func (h *KubeDBHandler) Install(w http.ResponseWriter, r *http.Request) {
+
+// 	// 1️⃣ Parse request
+// 	var req InstallRequest
+// 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+// 		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
+// 		return
+// 	}
+
+// 	// 2️⃣ Get Bearer token
+// 	token, err := getBearerToken(r)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusUnauthorized)
+// 		return
+// 	}
+
+// 	// 3️⃣ Download kubeconfig
+// 	if err := kubeconfig.Download(
+// 		h.Cfg.CompassBaseURL,
+// 		token,
+// 		req.Domain,
+// 		req.Project,
+// 		req.Cluster,
+// 		h.Cfg.KubeconfigPath,
+// 	); err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	// 4️⃣ Encode kubeconfig
+// 	kubeconfigB64, err := kubeconfig.EncodeFileToBase64(h.Cfg.KubeconfigPath)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	// 🔥 5️⃣ SAVE STATUS = INSTALLING (IMPORTANT)
+// 	if err := repository.SaveDBaaSRecord(
+// 		req.Domain,
+// 		req.Project,
+// 		req.Cluster,
+// 		"INSTALLING",
+// 		kubeconfigB64,
+// 	); err != nil {
+// 		http.Error(w, "Mongo save failed: "+err.Error(), 500)
+// 		return
+// 	}
+
+// 	// 6️⃣ Run install
+// 	if err := installer.InstallKubeDB(); err != nil {
+
+// 		// ❌ INSTALL FAILED → update status
+// 		_ = repository.SaveDBaaSRecord(
+// 			req.Domain,
+// 			req.Project,
+// 			req.Cluster,
+// 			"FAILED",
+// 			kubeconfigB64,
+// 		)
+
+// 		http.Error(w, "KubeDB install failed: "+err.Error(), 500)
+// 		return
+// 	}
+
+// 	// ✅ 7️⃣ INSTALL SUCCESS → update status
+// 	if err := repository.SaveDBaaSRecord(
+// 		req.Domain,
+// 		req.Project,
+// 		req.Cluster,
+// 		"INSTALLED",
+// 		kubeconfigB64,
+// 	); err != nil {
+// 		http.Error(w, "Mongo save failed: "+err.Error(), 500)
+// 		return
+// 	}
+
+// 	// 8️⃣ Response
+// 	w.Header().Set("Content-Type", "application/json")
+// 	json.NewEncoder(w).Encode(map[string]string{
+// 		"status":  "success",
+// 		"message": "KubeDB installed successfully",
+// 	})
+// }
+
 func (h *KubeDBHandler) Install(w http.ResponseWriter, r *http.Request) {
 
 	// 1️⃣ Parse request
@@ -53,7 +137,7 @@ func (h *KubeDBHandler) Install(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 3️⃣ Download kubeconfig
+	// 3️⃣ Download kubeconfig (blocking, must succeed)
 	if err := kubeconfig.Download(
 		h.Cfg.CompassBaseURL,
 		token,
@@ -73,7 +157,7 @@ func (h *KubeDBHandler) Install(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 🔥 5️⃣ SAVE STATUS = INSTALLING (IMPORTANT)
+	// 5️⃣ Save INSTALLING status immediately
 	if err := repository.SaveDBaaSRecord(
 		req.Domain,
 		req.Project,
@@ -85,38 +169,38 @@ func (h *KubeDBHandler) Install(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 6️⃣ Run install
-	if err := installer.InstallKubeDB(); err != nil {
+	// 🔥 6️⃣ BACKGROUND INSTALL (NON-BLOCKING)
+	go func(domain, project, cluster, kubeconfig string) {
 
-		// ❌ INSTALL FAILED → update status
+		// Run install
+		if err := installer.InstallKubeDB(); err != nil {
+
+			// ❌ FAILED
+			_ = repository.SaveDBaaSRecord(
+				domain,
+				project,
+				cluster,
+				"FAILED",
+				kubeconfig,
+			)
+			return
+		}
+
+		// ✅ SUCCESS
 		_ = repository.SaveDBaaSRecord(
-			req.Domain,
-			req.Project,
-			req.Cluster,
-			"FAILED",
-			kubeconfigB64,
+			domain,
+			project,
+			cluster,
+			"INSTALLED",
+			kubeconfig,
 		)
 
-		http.Error(w, "KubeDB install failed: "+err.Error(), 500)
-		return
-	}
+	}(req.Domain, req.Project, req.Cluster, kubeconfigB64)
 
-	// ✅ 7️⃣ INSTALL SUCCESS → update status
-	if err := repository.SaveDBaaSRecord(
-		req.Domain,
-		req.Project,
-		req.Cluster,
-		"INSTALLED",
-		kubeconfigB64,
-	); err != nil {
-		http.Error(w, "Mongo save failed: "+err.Error(), 500)
-		return
-	}
-
-	// 8️⃣ Response
+	// 7️⃣ RETURN RESPONSE IMMEDIATELY 🚀
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
-		"status":  "success",
-		"message": "KubeDB installed successfully",
+		"status":  "accepted",
+		"message": "KubeDB installation started",
 	})
 }
