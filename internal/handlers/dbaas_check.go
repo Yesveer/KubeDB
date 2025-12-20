@@ -20,20 +20,21 @@ func (h *KubeDBHandler) CheckDBaaS(w http.ResponseWriter, r *http.Request) {
 
 	record, err := repository.FindDBaaSRecord(domain, project, cluster)
 	if err != nil {
-		http.Error(w, "Mongo query failed: "+err.Error(), 500)
+		http.Error(w, "Mongo query failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+
+	// ✅ RECORD NOT FOUND → 200 OK
 	if record == nil {
-		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"exists":  false,
-			"message": "DBaaS record not found",
+			"exists": false,
 		})
 		return
 	}
 
-	// Found
+	// ✅ RECORD FOUND → 200 OK
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"exists": true,
 		"data": map[string]interface{}{
