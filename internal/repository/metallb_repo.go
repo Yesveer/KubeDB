@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"dbaas-orcastrator/internal/db"
@@ -75,18 +76,27 @@ func ListMetalLBPoolsFiltered(
 
 func DeleteMetalLBPool(domain, project, cluster, poolName string) error {
 
-	_, err := db.Client.
+	result, err := db.Client.
 		Database("compass-config").
-		Collection("dbaas-ip").
+		Collection(metallbCollection).
 		DeleteOne(
 			context.TODO(),
 			bson.M{
-				"domain":   domain,
-				"project":  project,
-				"cluster":  cluster,
-				"poolName": poolName,
+				"domain":    domain,
+				"project":   project,
+				"cluster":   cluster,
+				"pool_name": poolName, // 🔥 FIX: correct DB field
 			},
 		)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	// 🔥 Important safety check
+	if result.DeletedCount == 0 {
+		return fmt.Errorf("no MetalLB pool found in DB for deletion")
+	}
+
+	return nil
 }
