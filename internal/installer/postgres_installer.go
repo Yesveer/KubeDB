@@ -11,9 +11,9 @@ import (
 	"dbaas-orcastrator/internal/repository"
 )
 
-func InstallMySql(db models.DatabaseRecord) {
+func InstallPostgres(db models.DatabaseRecord) {
 
-	log.Println("🚀 Creating MySQL:", db.Name)
+	log.Println("🚀 Creating Postgres:", db.Name)
 
 	kubeconfig := os.Getenv("KUBECONFIG_PATH")
 
@@ -45,7 +45,7 @@ EOF
 apiVersion: v1
 kind: Secret
 metadata:
-  name: mysql-custom-auth
+  name: pg-custom-auth
   namespace: %s
 type: kubernetes.io/basic-auth
 stringData:
@@ -53,17 +53,20 @@ stringData:
   password: %s
 ---
 apiVersion: kubedb.com/v1
-kind: MySQL
+kind: Postgres
 metadata:
   name: %s
   namespace: %s
 spec:
   version: "%s"
-  replicas: %d
 
   authSecret:
-    name: mysql-custom-auth
+    name: pg-custom-auth
     externallyManaged: true
+
+  replicas: %d
+  standbyMode: Hot
+  streamingMode: Asynchronous
 
   storageType: Durable
   storage:
@@ -74,6 +77,11 @@ spec:
       requests:
         storage: "%s"
 
+  leaderElection:
+    leaseDurationSeconds: 15
+    renewDeadlineSeconds: 10
+    retryPeriodSeconds: 2
+
   serviceTemplates:
     - alias: primary
       metadata:
@@ -82,14 +90,21 @@ spec:
       spec:
         type: LoadBalancer
         ports:
-          - name: mysql
-            port: 3306
+          - name: postgres
+            port: 5432
+
+    - alias: standby
+      spec:
+        type: ClusterIP
+        ports:
+          - name: postgres
+            port: 5432
 
   monitor:
     agent: prometheus.io/operator
     prometheus:
       exporter:
-        port: 9104
+        port: 9187
       serviceMonitor:
         labels:
           release: kube-prom-stack
@@ -100,7 +115,7 @@ spec:
 		db.Username,
 		db.Password,
 
-		// 🟢 MySQL CR
+		// 🐘 Postgres
 		db.Name,
 		db.Namespace,
 		db.Version,
@@ -111,26 +126,26 @@ spec:
 		db.MetalLBPool,
 	)
 
-	tmp := "/tmp/mysql.yaml"
+	tmp := "/tmp/postgres.yaml"
 	if err := os.WriteFile(tmp, []byte(yaml), 0644); err != nil {
 		log.Println("❌ Failed to write yaml:", err)
 		return
 	}
 
 	// 3️⃣ APPLY YAML
-	log.Println("📄 Applying MySQL YAML")
+	log.Println("📄 Applying Postgres YAML")
 	run("kubectl apply -f " + tmp)
 
 	// 4️⃣ WAIT FOR POD
-	log.Println("⏳ Waiting for MySQL to be ready...")
-	if err := WaitForMySqlReady(kubeconfig, db.Name, db.Namespace); err != nil {
-		log.Println("❌ MySQL not ready:", err)
+	log.Println("⏳ Waiting for Postgres to be ready...")
+	if err := WaitForPostgresReady(kubeconfig, db.Name, db.Namespace); err != nil {
+		log.Println("❌ Postgres not ready:", err)
 		return
 	}
 
 	// 5️⃣ GET LB IP
 	lbIP := strings.TrimSpace(run(
-		fmt.Sprintf("kubectl get svc %s -n %s -o jsonpath='{.status.loadBalancer.ingress[0].ip}'",
+		fmt.Sprintf("kubectl get svc %s-external -n %s -o jsonpath='{.status.loadBalancer.ingress[0].ip}'",
 			db.Name, db.Namespace),
 	))
 
@@ -157,7 +172,7 @@ spec:
 
 	// 8️⃣ CONNECTION STRING
 	conn := fmt.Sprintf(
-		"mysql://%s:%s@%s:3306/",
+		"postgres://%s:%s@%s:5432/",
 		db.Username,
 		db.Password,
 		lbIP,
