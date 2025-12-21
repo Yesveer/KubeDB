@@ -48,6 +48,7 @@ func (h *KubeDBHandler) CreateClickHouse(w http.ResponseWriter, r *http.Request)
 		Username:    req.Username,
 		Password:    req.Password,
 		Replicas:    req.Replicas,
+		ReplicaSet:  req.ReplicaSet,
 		Storage:     req.Storage,
 		MetalLBPool: req.MetalLBPool,
 		Status:      "CREATING",
