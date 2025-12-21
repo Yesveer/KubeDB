@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"dbaas-orcastrator/internal/installer"
+	"dbaas-orcastrator/internal/kubeconfig"
 	"dbaas-orcastrator/internal/models"
 	"dbaas-orcastrator/internal/repository"
 )
@@ -54,6 +55,24 @@ func (h *KubeDBHandler) CreateMongoDB(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:   time.Now(),
 	}
 
+	token, err := getBearerToken(r)
+	if err != nil {
+		http.Error(w, err.Error(), 401)
+		return
+	}
+
+	// 1️⃣ Download kubeconfig
+	if err := kubeconfig.Download(
+		h.Cfg.CompassBaseURL,
+		token,
+		req.Domain,
+		req.Project,
+		req.Cluster,
+		h.Cfg.KubeconfigPath,
+	); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
 	// 🔥 DB INSERT FIRST
 	if err := repository.InsertMongoDB(record); err != nil {
 		http.Error(w, "Mongo insert failed", 500)
