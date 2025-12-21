@@ -11,7 +11,7 @@ import (
 	"dbaas-orcastrator/internal/repository"
 )
 
-type ClickHouseCreateRequest struct {
+type KafkaCreateRequest struct {
 	Domain  string `json:"domain"`
 	Project string `json:"project"`
 	Cluster string `json:"cluster"`
@@ -29,9 +29,9 @@ type ClickHouseCreateRequest struct {
 	MetalLBPool string `json:"metallbPool"`
 }
 
-func (h *KubeDBHandler) CreateClickHouse(w http.ResponseWriter, r *http.Request) {
+func (h *KubeDBHandler) CreateKafka(w http.ResponseWriter, r *http.Request) {
 
-	var req ClickHouseCreateRequest
+	var req KafkaCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid JSON", 400)
 		return
@@ -41,14 +41,13 @@ func (h *KubeDBHandler) CreateClickHouse(w http.ResponseWriter, r *http.Request)
 		Domain:      req.Domain,
 		Project:     req.Project,
 		Cluster:     req.Cluster,
-		DBType:      "clickhouse",
+		DBType:      "kafka",
 		Name:        req.Name,
 		Namespace:   req.Namespace,
 		Version:     req.Version,
 		Username:    req.Username,
 		Password:    req.Password,
 		Replicas:    req.Replicas,
-		ReplicaSet:  req.ReplicaSet,
 		Storage:     req.Storage,
 		MetalLBPool: req.MetalLBPool,
 		Status:      "CREATING",
@@ -80,9 +79,9 @@ func (h *KubeDBHandler) CreateClickHouse(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 🔥 RUN INSTALL ASYNC
-	go installer.InstallClickHouse(record)
+	go installer.InstallKafka(record)
 
 	json.NewEncoder(w).Encode(map[string]string{
-		"status": "ClickHouse creation started",
+		"status": "Kafka creation started",
 	})
 }
