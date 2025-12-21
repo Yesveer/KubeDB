@@ -11,9 +11,9 @@ import (
 	"dbaas-orcastrator/internal/repository"
 )
 
-func InstallPostgres(db models.DatabaseRecord) {
+func InstallRedis(db models.DatabaseRecord) {
 
-	log.Println("🚀 Creating Postgres:", db.Name)
+	log.Println("🚀 Creating Redis:", db.Name)
 
 	kubeconfig := os.Getenv("KUBECONFIG_PATH")
 
@@ -45,7 +45,7 @@ EOF
 apiVersion: v1
 kind: Secret
 metadata:
-  name: pg-custom-auth
+  name: redis-custom-auth
   namespace: %s
 type: kubernetes.io/basic-auth
 stringData:
@@ -53,20 +53,18 @@ stringData:
   password: %s
 ---
 apiVersion: kubedb.com/v1
-kind: Postgres
+kind: Redis
 metadata:
   name: %s
   namespace: %s
 spec:
   version: "%s"
+  mode: Standalone
+  replicas: %d
 
   authSecret:
-    name: pg-custom-auth
+    name: redis-custom-auth
     externallyManaged: true
-
-  replicas: %d
-  standbyMode: Hot
-  streamingMode: Asynchronous
 
   storageType: Durable
   storage:
@@ -77,11 +75,6 @@ spec:
       requests:
         storage: "%s"
 
-  leaderElection:
-    leaseDurationSeconds: 15
-    renewDeadlineSeconds: 10
-    retryPeriodSeconds: 2
-
   serviceTemplates:
     - alias: primary
       metadata:
@@ -90,21 +83,14 @@ spec:
       spec:
         type: LoadBalancer
         ports:
-          - name: postgres
-            port: 5432
-
-    - alias: standby
-      spec:
-        type: ClusterIP
-        ports:
-          - name: postgres
-            port: 5432
+          - name: redis
+            port: 6379
 
   monitor:
     agent: prometheus.io/operator
     prometheus:
       exporter:
-        port: 9187
+        port: 9121
       serviceMonitor:
         labels:
           release: kube-prom-stack
@@ -115,7 +101,7 @@ spec:
 		db.Username,
 		db.Password,
 
-		// 🐘 Postgres
+		// 🔴 Redis
 		db.Name,
 		db.Namespace,
 		db.Version,
@@ -126,26 +112,26 @@ spec:
 		db.MetalLBPool,
 	)
 
-	tmp := "/tmp/postgres.yaml"
+	tmp := "/tmp/redis.yaml"
 	if err := os.WriteFile(tmp, []byte(yaml), 0644); err != nil {
 		log.Println("❌ Failed to write yaml:", err)
 		return
 	}
 
 	// 3️⃣ APPLY YAML
-	log.Println("📄 Applying Postgres YAML")
+	log.Println("📄 Applying Redis YAML")
 	run("kubectl apply -f " + tmp)
 
 	// 4️⃣ WAIT FOR POD
-	log.Println("⏳ Waiting for Postgres to be ready...")
-	if err := WaitForPostgresReady(kubeconfig, db.Name, db.Namespace); err != nil {
-		log.Println("❌ Postgres not ready:", err)
+	log.Println("⏳ Waiting for Redis to be ready...")
+	if err := WaitForRedisReady(kubeconfig, db.Name, db.Namespace); err != nil {
+		log.Println("❌ Redis not ready:", err)
 		return
 	}
 
 	// 5️⃣ GET LB IP
 	lbIP := strings.TrimSpace(run(
-		fmt.Sprintf("kubectl get svc %s -n %s -o jsonpath='{.status.loadBalancer.ingress[0].ip}'",
+		fmt.Sprintf("kubectl get svc %s-external -n %s -o jsonpath='{.status.loadBalancer.ingress[0].ip}'",
 			db.Name, db.Namespace),
 	))
 
@@ -172,7 +158,7 @@ spec:
 
 	// 8️⃣ CONNECTION STRING
 	conn := fmt.Sprintf(
-		"postgres://%s:%s@%s:5432/",
+		"rediss://%s:%s@%s:6379/",
 		db.Username,
 		db.Password,
 		lbIP,

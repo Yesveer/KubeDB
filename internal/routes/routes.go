@@ -22,6 +22,8 @@ func Register(k *handlers.KubeDBHandler) {
 	http.HandleFunc("/database/clickhouse/create", k.CreateClickHouse)
 	http.HandleFunc("/database/kafka/create", k.CreateKafka)
 	http.HandleFunc("/database/mysql/create", k.CreateMySql)
+	http.HandleFunc("/database/postgres/create", k.CreatePostgres)
+	http.HandleFunc("/database/redis/create", k.RedisCreateRequest)
 	http.HandleFunc("/databases", k.GetDatabases)
 	http.HandleFunc("/database/delete", k.DeleteDatabase)
 	http.HandleFunc("/database/scale", k.ScaleMongoDB)
