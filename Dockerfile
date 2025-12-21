@@ -35,6 +35,9 @@
         curl \
         wget \
         bash \
+        sshpass \
+        openssh-client \
+        iproute2 \
         jq \
         git \
         sudo \

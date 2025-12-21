@@ -20,3 +20,14 @@ helm install kubedb oci://ghcr.io/appscode-charts/kubedb \
   --set-file global.license=scripts/licence.txt \
   --set networkPolicy.enabled=false \
   --wait
+
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+helm install kube-prom-stack prometheus-community/kube-prometheus-stack \
+  -n monitoring \
+  --create-namespace \
+  --set grafana.enabled=true \
+  --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false \
+  --set prometheus.prometheusSpec.podMonitorSelectorNilUsesHelmValues=false \
+  --wait
