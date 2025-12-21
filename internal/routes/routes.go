@@ -19,8 +19,9 @@ func Register(k *handlers.KubeDBHandler) {
 	http.HandleFunc("/metallb/delete", k.DeleteMetalLBPool)
 	http.HandleFunc("/db/versions", k.GetDBVersions)
 	http.HandleFunc("/database/mongo/create", k.CreateMongoDB)
+	http.HandleFunc("/database/clickhouse/create", k.CreateClickHouse)
 	http.HandleFunc("/databases", k.GetDatabases)
 	http.HandleFunc("/database/delete", k.DeleteDatabase)
-	http.HandleFunc("/mongo/scale", k.ScaleMongoDB)
+	http.HandleFunc("/database/scale", k.ScaleMongoDB)
 	http.HandleFunc("/backup/create", k.CreateBackup)
 }

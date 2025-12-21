@@ -76,6 +76,6 @@ func (h *KubeDBHandler) ScaleMongoDB(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(map[string]string{
 		"status":  "success",
-		"message": "MongoDB scaled successfully",
+		"message": "Database scaled successfully",
 	})
 }
