@@ -62,3 +62,22 @@ func ListDBaaSByDomainProject(domain, project string) ([]models.DBaaSRecord, err
 
 	return records, nil
 }
+
+func ListAllDBaaS() ([]models.DBaaSRecord, error) {
+
+	var result []models.DBaaSRecord
+
+	cursor, err := db.Client.
+		Database("compass-config").
+		Collection("dbaas").
+		Find(context.TODO(), bson.M{})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cursor.All(context.TODO(), &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}

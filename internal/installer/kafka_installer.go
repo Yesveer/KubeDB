@@ -131,6 +131,40 @@ spec:
       protocol: TCP
       port: 9093
       targetPort: 9093
+---
+apiVersion: autoscaling.kubedb.com/v1alpha1
+kind: KafkaAutoscaler
+metadata:
+  name: "%s-autoscaler"
+  namespace: "%s"
+spec:
+  databaseRef:
+    name: "%s"
+  storage:
+    broker:
+      minAllowed:
+        cpu: 400m
+        memory: 400Mi
+      maxAllowed:
+        cpu: "1"
+        memory: 1Gi
+      trigger: "On"
+      controlledResources:
+        - cpu
+        - memory
+      containerControlledValues: RequestsAndLimits
+
+  storage:
+    broker:
+      expansionMode: Online
+      trigger: "On"
+      usageThreshold: 60
+      scalingThreshold: 100
+    controller:
+      expansionMode: Online
+      trigger: "On"
+      usageThreshold: 60
+      scalingThreshold: 100
 `,
 		// 🔐 Secret
 		db.Namespace,
@@ -156,6 +190,11 @@ spec:
 		db.Name,
 		db.Namespace,
 		db.MetalLBPool,
+		db.Name,
+
+		// 🧮 Autoscaler
+		db.Name,
+		db.Namespace,
 		db.Name,
 	)
 

@@ -100,6 +100,35 @@ spec:
     - name: native
       port: 9000
       targetPort: 9000
+---
+apiVersion: autoscaling.kubedb.com/v1alpha1
+kind: ClickHouseAutoscaler
+metadata:
+  name: "%s-autoscaler"
+  namespace: "%s"
+spec:
+  databaseRef:
+    name: "%s"
+  compute:
+    clickhouse:
+      minAllowed:
+        cpu: 1
+        memory: 2Gi
+      maxAllowed:
+        cpu: 2
+        memory: 3Gi
+      trigger: "On"
+      controlledResources:
+        - cpu
+        - memory
+      containerControlledValues: RequestsAndLimits
+
+  storage:
+    clickhouse:
+      expansionMode: Online
+      trigger: "On"
+      usageThreshold: 60
+      scalingThreshold: 100
 `,
 		// Secret
 		db.Namespace,
@@ -117,6 +146,11 @@ spec:
 		db.Name,
 		db.Namespace,
 		db.MetalLBPool,
+		db.Name,
+
+		// Autoscaler
+		db.Name,
+		db.Namespace,
 		db.Name,
 	)
 

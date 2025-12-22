@@ -109,6 +109,31 @@ spec:
         labels:
           release: kube-prom-stack
         interval: 30s
+---
+apiVersion: autoscaling.kubedb.com/v1alpha1
+kind: PostgresAutoscaler
+metadata:
+  name: "%s-autoscaler"
+  namespace: "%s"
+spec:
+  databaseRef:
+    name: "%s"
+  compute:
+    postgres:
+      minAllowed:
+        cpu: 500m
+        memory: 1Gi
+      maxAllowed:
+        cpu: "2"
+        memory: 4Gi
+      trigger: "On"
+
+  storage:
+    postgres:
+      expansionMode: Online
+      trigger: "On"
+      usageThreshold: 70
+      scalingThreshold: 60
 `,
 		// 🔐 Secret
 		db.Namespace,
@@ -124,6 +149,11 @@ spec:
 
 		// 🔌 Service (MetalLB)
 		db.MetalLBPool,
+
+		// 🧮 Autoscaler
+		db.Name,      // autoscaler name
+		db.Namespace, // namespace
+		db.Name,      // postgres name
 	)
 
 	tmp := "/tmp/postgres.yaml"

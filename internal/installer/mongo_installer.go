@@ -62,6 +62,10 @@ spec:
 
   replicaSet:
     name: %s
+	
+  authSecret:
+    name: mongo-custom-auth
+    externallyManaged: true
 
   storage:
     storageClassName: local-path
@@ -102,21 +106,30 @@ spec:
           release: kube-prom-stack
         interval: 30s
 ---
-apiVersion: ops.kubedb.com/v1alpha1
-kind: MongoDBOpsRequest
+apiVersion: autoscaling.kubedb.com/v1alpha1
+kind: MongoDBAutoscaler
 metadata:
-  name: %s-rotate-auth
-  namespace: %s
+  name: "%s-autoscaler"
+  namespace: "%s"
 spec:
-  type: RotateAuth
   databaseRef:
-    name: %s
-  authentication:
-    secretRef:
-      kind: Secret
-      name: mongo-custom-auth
-  timeout: 5m
-  apply: IfReady
+    name: "%s"
+  compute:
+    replicaSet:
+      minAllowed:
+        cpu: 500m
+        memory: 1Gi
+      maxAllowed:
+        cpu: "2"
+        memory: 4Gi
+      trigger: "On"
+
+  storage:
+    replicaSet:
+      expansionMode: Online
+      trigger: "On"
+      usageThreshold: 70
+      scalingThreshold: 60
 `,
 		db.Namespace, // namespace
 		db.Username,  // username
@@ -131,9 +144,9 @@ spec:
 		db.MetalLBPool, // primary pool
 		db.MetalLBPool, // standby pool
 
-		db.Name,      // opsrequest name prefix
-		db.Namespace, // opsrequest namespace
-		db.Name,      // databaseRef name
+		db.Name,      // autoscaler name
+		db.Namespace, // namespace
+		db.Name,      // mongodb name
 	)
 	tmp := "/tmp/mongo.yaml"
 	if err := os.WriteFile(tmp, []byte(yaml), 0644); err != nil {

@@ -95,6 +95,35 @@ spec:
         labels:
           release: kube-prom-stack
         interval: 30s
+---
+apiVersion: autoscaling.kubedb.com/v1alpha1
+kind: RedisAutoscaler
+metadata:
+  name: "%s-autoscaler"
+  namespace: "%s"
+spec:
+  databaseRef:
+    name: "%s"
+  compute:
+    standalone:
+      minAllowed:
+        cpu: 400m
+        memory: 400Mi
+      maxAllowed:
+        cpu: "1"
+        memory: 1Gi
+      trigger: "On"
+      controlledResources:
+        - cpu
+        - memory
+      containerControlledValues: RequestsAndLimits
+
+  storage:
+    standalone:
+      expansionMode: Online
+      trigger: "On"
+      usageThreshold: 70
+      scalingThreshold: 60
 `,
 		// 🔐 Secret
 		db.Namespace,
@@ -110,6 +139,11 @@ spec:
 
 		// 🔌 Service (MetalLB)
 		db.MetalLBPool,
+
+		// 🧮 Autoscaler
+		db.Name,      // autoscaler name
+		db.Namespace, // namespace
+		db.Name,      // redis name
 	)
 
 	tmp := "/tmp/redis.yaml"
