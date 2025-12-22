@@ -28,4 +28,5 @@ func Register(k *handlers.KubeDBHandler) {
 	http.HandleFunc("/database/delete", k.DeleteDatabase)
 	http.HandleFunc("/database/scale", k.ScaleMongoDB)
 	http.HandleFunc("/backup/create", k.CreateBackup)
+	http.HandleFunc("/database/upgrade", k.UpgradeDatabase)
 }
