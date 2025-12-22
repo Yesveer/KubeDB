@@ -49,7 +49,7 @@ metadata:
 type: kubernetes.io/basic-auth
 stringData:
   username: %s
-  password: %s
+  password: "%s"
 ---
 apiVersion: kubedb.com/v1
 kind: MongoDB

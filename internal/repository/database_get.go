@@ -50,3 +50,22 @@ func GetDatabaseByName(domain, project, name string) (*models.DatabaseRecord, er
 
 	return &rec, nil
 }
+
+func GetAllDatabases() ([]models.DatabaseRecord, error) {
+
+	var result []models.DatabaseRecord
+
+	cursor, err := db.Client.
+		Database("compass-config").
+		Collection("databases").
+		Find(context.TODO(), bson.M{})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cursor.All(context.TODO(), &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
