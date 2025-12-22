@@ -46,17 +46,17 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: kafka-custom-auth
-  namespace: %s
+  namespace: "%s"
 type: kubernetes.io/basic-auth
 stringData:
-  username: %s
-  password: %s
+  username: "%s"
+  password: "%s"
 ---
 apiVersion: kubedb.com/v1
 kind: Kafka
 metadata:
-  name: %s
-  namespace: %s
+  name: "%s"
+  namespace: "%s"
 spec:
   version: "%s"
 
@@ -97,15 +97,15 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: %s-broker-external
-  namespace: %s
+  name: "%s-broker-external"
+  namespace: "%s"
   annotations:
-    metallb.io/address-pool: %s
+    metallb.io/address-pool: "%s"
 spec:
   type: LoadBalancer
   selector:
     app.kubernetes.io/name: kafkas.kubedb.com
-    app.kubernetes.io/instance: %s
+    app.kubernetes.io/instance: "%s"
     kubedb.com/role: broker
   ports:
     - name: kafka
@@ -116,15 +116,15 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: %s-controller-external
-  namespace: %s
+  name: "%s-controller-external"
+  namespace: "%s"
   annotations:
-    metallb.io/address-pool: %s
+    metallb.io/address-pool: "%s"
 spec:
   type: LoadBalancer
   selector:
     app.kubernetes.io/name: kafkas.kubedb.com
-    app.kubernetes.io/instance: %s
+    app.kubernetes.io/instance: "%s"
     kubedb.com/role: controller
   ports:
     - name: kafka-controller
@@ -140,7 +140,8 @@ metadata:
 spec:
   databaseRef:
     name: "%s"
-  storage:
+  
+  compute:
     broker:
       minAllowed:
         cpu: 400m
