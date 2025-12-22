@@ -165,7 +165,7 @@ spec:
 
 	// 5️⃣ GET LB IP
 	lbIP := strings.TrimSpace(run(
-		fmt.Sprintf("kubectl get svc %s-external -n %s -o jsonpath='{.status.loadBalancer.ingress[0].ip}'",
+		fmt.Sprintf("kubectl get svc %s -n %s -o jsonpath='{.status.loadBalancer.ingress[0].ip}'",
 			db.Name, db.Namespace),
 	))
 

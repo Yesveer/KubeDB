@@ -45,27 +45,27 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: mongo-custom-auth
-  namespace: %s
+  namespace: "%s"
 type: kubernetes.io/basic-auth
 stringData:
-  username: %s
+  username: "%s"
   password: "%s"
 ---
 apiVersion: kubedb.com/v1
 kind: MongoDB
 metadata:
-  name: %s
-  namespace: %s
+  name: "%s"
+  namespace: "%s"
 spec:
   version: "%s"
   replicas: %d
 
-  replicaSet:
-    name: %s
-	
   authSecret:
     name: mongo-custom-auth
     externallyManaged: true
+
+  replicaSet:
+    name: "%s"
 
   storage:
     storageClassName: local-path
@@ -73,13 +73,13 @@ spec:
       - ReadWriteOnce
     resources:
       requests:
-        storage: %s
+        storage: "%s"
 
   serviceTemplates:
     - alias: primary
       metadata:
         annotations:
-          metallb.io/address-pool: %s
+          metallb.io/address-pool: "%s"
       spec:
         type: LoadBalancer
         ports:
@@ -89,13 +89,12 @@ spec:
     - alias: standby
       metadata:
         annotations:
-          metallb.io/address-pool: %s
+          metallb.io/address-pool: "%s"
       spec:
         type: LoadBalancer
         ports:
           - name: mongodb
             port: 27017
-
   monitor:
     agent: prometheus.io/operator
     prometheus:
@@ -114,6 +113,7 @@ metadata:
 spec:
   databaseRef:
     name: "%s"
+
   compute:
     replicaSet:
       minAllowed:
