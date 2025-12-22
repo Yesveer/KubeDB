@@ -192,7 +192,9 @@ spec:
 
 	// 8️⃣ CONNECTION STRING
 	conn := fmt.Sprintf(
-		"rediss://%s:%s@%s:6379/",
+		// "rediss://%s:%s@%s:6379/",
+		// `redis-cli -h %s -p 6379 -a %s`,
+		`redis://%s:%s@%s:6379`,
 		db.Username,
 		db.Password,
 		lbIP,

@@ -200,7 +200,8 @@ spec:
 
 	// 8️⃣ CONNECTION STRING
 	conn := fmt.Sprintf(
-		"clickhouse://%s:%s@%s:8123/",
+		"clickhouse://%s:%s@%s:9000/",
+		// `clickhouse-client --host "%s" --port 9000 --user "%s"`,
 		db.Username,
 		db.Password,
 		lbIP,
