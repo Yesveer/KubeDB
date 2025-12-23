@@ -35,4 +35,5 @@ func Register(k *handlers.KubeDBHandler) {
 	http.HandleFunc("/monitoring/health", k.MonitoringHealthCheck)
 	http.HandleFunc("/monitoring/query", k.QueryMetrics)
 	http.HandleFunc("/monitoring/query_range", k.QueryRangeMetrics)
+	http.HandleFunc("/monitoring/prometheus_url", k.GetPrometheusURL)
 }
