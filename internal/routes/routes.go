@@ -34,4 +34,11 @@ func Register(k *handlers.KubeDBHandler) {
 	http.HandleFunc("/monitoring/query_range", k.QueryRangeMetrics)
 	http.HandleFunc("/monitoring/prometheus_url", k.GetPrometheusURL)
 	http.HandleFunc("/backup/restore", k.RestoreBackup)
+	// 	router.HandleFunc("/api/mongo/databases", h.ListMongoDatabases).Methods("POST")
+	// router.HandleFunc("/api/mongo/collections", h.ListMongoCollections).Methods("POST")
+	// router.HandleFunc("/api/mongo/documents", h.BrowseMongoDocuments).Methods("POST")
+	http.HandleFunc("/mongo/databases", k.ListMongoDatabases)
+	http.HandleFunc("/mongo/collections", k.ListMongoCollections)
+	http.HandleFunc("/mongo/documents", k.BrowseMongoDocuments)
+
 }

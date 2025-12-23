@@ -10,9 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func GetLatestCompletedBackup(
-	domain, project, cluster, name string,
-) (*models.BackupInfo, error) {
+func GetMongoRecord(domain, project, cluster, name string) (*models.DatabaseRecord, error) {
 
 	filter := bson.M{
 		"domain":  domain,
@@ -21,23 +19,20 @@ func GetLatestCompletedBackup(
 		"name":    name,
 	}
 
-	var record models.DatabaseRecord
+	var rec models.DatabaseRecord
 	err := db.Client.
 		Database("compass-config").
 		Collection("databases").
 		FindOne(context.TODO(), filter).
-		Decode(&record)
+		Decode(&rec)
 
 	if err != nil {
 		return nil, err
 	}
 
-	// 🔥 Reverse iterate = latest first
-	for i := len(record.Backup) - 1; i >= 0; i-- {
-		if record.Backup[i].Status == "Completed" {
-			return &record.Backup[i], nil
-		}
+	if rec.DBType != "mongo" {
+		return nil, errors.New("this is not mongo cluster")
 	}
 
-	return nil, errors.New("no completed backup found")
+	return &rec, nil
 }
