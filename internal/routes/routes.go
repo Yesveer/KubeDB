@@ -29,11 +29,9 @@ func Register(k *handlers.KubeDBHandler) {
 	http.HandleFunc("/database/scale", k.ScaleMongoDB)
 	http.HandleFunc("/backup/create", k.CreateBackup)
 	http.HandleFunc("/database/upgrade", k.UpgradeDatabase)
-	// ✅ MONITORING ROUTES - ADD THESE AT THE END
-	// The following handlers are commented out because the corresponding methods are not implemented in KubeDBHandler.
-	// Uncomment and implement these methods in the handler if needed.
 	http.HandleFunc("/monitoring/health", k.MonitoringHealthCheck)
 	http.HandleFunc("/monitoring/query", k.QueryMetrics)
 	http.HandleFunc("/monitoring/query_range", k.QueryRangeMetrics)
 	http.HandleFunc("/monitoring/prometheus_url", k.GetPrometheusURL)
+	http.HandleFunc("/backup/restore", k.RestoreBackup)
 }
